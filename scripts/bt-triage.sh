@@ -51,6 +51,42 @@ for t in hciconfig btmgmt bluetoothctl busctl rfkill lsusb dkms; do
   have "$t" || note "optional tool missing: $t (some sections will be reduced)"
 done
 
+# --------------------------------------------------------- presence
+
+hr "ADAPTER PRESENCE"
+echo "  (hardware seen by USB vs controllers BlueZ can use)"
+HCI_N=$(ls /sys/class/bluetooth 2>/dev/null | grep -cE '^hci[0-9]+$')   # hciN:M are connections, not controllers
+USB_BT=0
+if [ -d /sys/bus/usb/devices ]; then
+  for d in /sys/bus/usb/devices/*; do
+    [ -r "$d/bDeviceClass" ] || continue
+    # class E0 / subclass 01 / protocol 01 is the Bluetooth radio interface
+    [ "$(cat "$d/bDeviceClass" 2>/dev/null)" = "e0" ] && USB_BT=$((USB_BT+1))
+  done
+fi
+UART_BT=0
+for h in /sys/class/bluetooth/hci*; do
+  [ -e "$h" ] || continue
+  case "$(basename "$h")" in *:*) continue ;; esac   # skip connection objects
+  case "$(readlink -f "$h" 2>/dev/null)" in *serial*|*tty*|*uart*) UART_BT=$((UART_BT+1));; esac
+done
+echo "  hci nodes        : $HCI_N"
+echo "  USB BT devices   : $USB_BT"
+echo "  UART/serial hci  : $UART_BT"
+if [ "$HCI_N" -eq 0 ] && [ "$USB_BT" -gt 0 ]; then
+  printf '  %sUSB Bluetooth hardware present but NO hci node exists -> Fix K%s\n' "$Y" "$R"
+  echo "    driver did not bind at all. Check: lsmod | grep -E 'btusb|btmtk|btrtl'"
+  echo "    rfkill hard block, or Bluetooth disabled in BIOS/UEFI."
+elif [ "$HCI_N" -eq 0 ]; then
+  printf '  %sno Bluetooth controllers at all -> Fix K%s\n' "$Y" "$R"
+  echo "    no USB BT hardware detected either. Check BIOS/UEFI, rfkill, and whether"
+  echo "    this machine uses a UART adapter (common on Raspberry Pi and ARM boards)."
+fi
+if [ "$UART_BT" -gt 0 ]; then
+  printf '  %snote: %s UART/serial controller(s) — this toolkit targets USB (btusb).%s\n' "$Y" "$UART_BT" "$R"
+  echo "    Diagnosis still applies; bt-patch-btusb.sh and bt-disable-adapter.sh do not."
+fi
+
 # ---------------------------------------------------------- adapters
 
 hr "ADAPTERS"
@@ -62,6 +98,7 @@ else
   note "hciconfig absent (deprecated in newer BlueZ; often in a 'bluez-deprecated' package)"
   for h in /sys/class/bluetooth/hci*; do
     [ -e "$h" ] || continue
+    case "$(basename "$h")" in *:*) continue ;; esac
     echo "  $(basename "$h")  address=$(cat "$h/address" 2>/dev/null)"
   done
 fi
@@ -278,9 +315,12 @@ fi
 # -------------------------------------------------------------- verdict
 
 hr "VERDICT HINTS"
-if have hciconfig; then
+if [ "$HCI_N" -eq 0 ]; then
+  printf '  %sno controllers to judge — see ADAPTER PRESENCE above (Fix K).%s\n' "$Y" "$R"
+elif have hciconfig; then
   for h in /sys/class/bluetooth/hci*; do
     [ -e "$h" ] || continue
+    case "$(basename "$h")" in *:*) continue ;; esac
     n=$(basename "$h")
     acl=$(hciconfig "$n" 2>/dev/null | grep -oE 'acl:[0-9]+' | head -1 | cut -d: -f2)
     [ -n "$acl" ] || continue

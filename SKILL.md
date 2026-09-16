@@ -34,10 +34,13 @@ busctl tree org.bluez | grep -c 'hci0/dev_'
 
 ## 2. Classify
 
-`acl` splits "never worked" from "worked then broke". Check it first.
+First check an adapter exists at all (`hciconfig`, or the collector's ADAPTER PRESENCE
+section). With no `hciN` there is no `acl` to read and the rest of this table does not
+apply. Otherwise `acl` splits "never worked" from "worked then broke".
 
 | Symptom | Firmware log | Fix |
 |---|---|---|
+| **no `hciN` exists at all** | any | **K** — driver never bound |
 | never worked, finds nothing | no lines at all | **A** — ID missing from btusb |
 | never worked, finds nothing | lines, but `failed` / `-2` | **D** — wrong or missing blob |
 | never worked, finds nothing | loaded cleanly | antenna / RF / faulty unit |
@@ -201,6 +204,44 @@ JustWorksRepairing = always
 FastConnectable = true
 Experimental = true       # also enables battery reporting
 ```
+
+### K — no adapter appears at all
+
+`lsusb` shows Bluetooth hardware but `hciconfig` is empty, or `bluetoothctl` says
+`No default controller available`. No driver bound, so there is nothing to diagnose yet.
+
+```bash
+lsmod | grep -E 'btusb|btrtl|btintel|btmtk|btbcm'    # driver loaded?
+sudo modprobe btusb
+rfkill list                                          # Hard blocked: yes = physical switch or BIOS
+dmesg | grep -iE 'bluetooth|btusb' | tail -20
+```
+
+Work through, in order:
+
+1. **Driver not loaded** — `modprobe btusb`; a missing vendor module (`btmtk` is the
+   common one) also prevents the controller from ever appearing.
+2. **Hard rfkill** — cannot be cleared in software. Physical switch, Fn key, or BIOS.
+3. **Disabled in BIOS/UEFI** — check there before anything else on laptops.
+4. **Kernel too old for the hardware** — newer adapters need newer kernels.
+5. **Deliberately disabled** — a previous `ATTR{authorized}="0"` rule (see Fix B):
+   `scripts/bt-disable-adapter.sh --list` shows disabled devices.
+
+Note: a device whose USB ID is missing from btusb still usually appears as `hciN` via
+the generic class rule — that is **Fix A**, not this. Fix K is when nothing appears.
+
+## Scope
+
+This toolkit targets **USB adapters driven by `btusb`**. Diagnosis (the decision table,
+`acl`, firmware logs) applies to any controller, but `bt-patch-btusb.sh` and
+`bt-disable-adapter.sh` do not work on non-USB hardware.
+
+**UART/serial controllers** — onboard Bluetooth on Raspberry Pi and most ARM boards uses
+`hci_uart` with `btbcm`/`hci_bcm`, not `btusb`. There is no `authorized` attribute and no
+USB ID to patch. For those: firmware still comes from `/lib/firmware/brcm/*.hcd`
+(Fix D applies), attachment is via `btattach`/`hciattach` or a device-tree overlay, and
+disabling is done with `rfkill` or by removing the overlay. The collector reports how
+many UART controllers it sees so you know you are in this territory.
 
 ## 4. Verify — no success report without these
 
