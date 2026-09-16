@@ -57,6 +57,7 @@ Claude loads the skill automatically on "bluetooth not working", "scan finds not
 
 | Symptom | Cause | Fix |
 |---|---|---|
+| **No `hciN` node exists at all** | driver never bound: module, rfkill, BIOS | K |
 | Never worked, scans find nothing, no firmware log | USB ID missing from `btusb` | A |
 | Same, but log shows a *failed* firmware load | wrong blob: `rtl8761b`/`bu`, Broadcom `.hcd`, MediaTek | D |
 | Device lands on the wrong adapter | two adapters competing for one bond | B |
@@ -73,6 +74,12 @@ Claude loads the skill automatically on "bluetooth not working", "scan finds not
 The first two land most "my dongle does not work on Linux" reports and look identical
 from outside. `bt-triage.sh` separates them by whether firmware was **never requested**
 or **requested and failed**.
+
+**Scope:** the tooling targets **USB adapters driven by `btusb`**. Diagnosis applies to
+any controller, but `bt-patch-btusb.sh` and `bt-disable-adapter.sh` do not work on
+UART/serial Bluetooth — Raspberry Pi and most ARM boards use `hci_uart`, where there
+is no USB ID to patch and no `authorized` attribute. `bt-triage.sh` reports how many
+UART controllers it sees so you know when you are in that territory.
 
 ## Tools
 
