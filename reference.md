@@ -106,6 +106,26 @@ PY
 
 Compare against the distro module — it should contain zero occurrences.
 
+## Upstream status — check before patching
+
+Most of these IDs land upstream eventually, so an override you forget about is worse
+than none. Confirm against the kernel you actually run, not a version number written
+here:
+
+```bash
+# is the ID in the kernel you are running?
+grep -n '0xVVVV, 0xPPPP' /usr/src/linux-headers-$(uname -r)/drivers/bluetooth/btusb.c 2>/dev/null
+
+# or against a given upstream tag
+curl -fsS "https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/plain/drivers/bluetooth/btusb.c?h=v7.2" \
+  | grep -n '0xVVVV, 0xPPPP'
+```
+
+Known: Mercusys MA530 `2c4e:0115` (RTL8761BU) — patches posted to linux-bluetooth in
+2025-02, 2025-08 and 2025-10; Debian bug #1128626. **Merged in kernel 7.2**, absent in
+7.1 and earlier; `2c4e:0128` landed in the same release. On 7.2 or newer no override is
+needed — remove it with `bt-patch-btusb.sh --uninstall`.
+
 ## Disabling an adapter — udev rule details
 
 The strength ordering of the three methods is in `SKILL.md` (Fix B). What follows is the

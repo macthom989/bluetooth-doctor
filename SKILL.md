@@ -75,6 +75,10 @@ modinfo btusb | grep srcversion
 # differ? systemctl stop bluetooth && modprobe -r btusb && modprobe btusb
 ```
 
+**Check whether your kernel already carries the ID first** — see `reference.md`;
+`2c4e:0115` for example landed in kernel 7.2, so on 7.2+ the right move is to upgrade,
+not to patch.
+
 Not evidence of anything: `modinfo` showing no vendor aliases (quirks live in a
 secondary table). `new_id` cannot fix this — it only reads the primary table.
 Secure Boot blocks unsigned modules: check `mokutil --sb-state`.
