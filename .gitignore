@@ -1,0 +1,15 @@
+# kernel build artifacts, if anyone builds inside the repo with --workdir .
+*.ko
+*.o
+*.mod
+*.mod.c
+Module.symvers
+modules.order
+.tmp_versions/
+.*.cmd
+# kernel sources fetched at build time
+btusb.c
+bt[a-z][a-z][a-z].c
+bt[a-z][a-z][a-z].h
+btusb.patch
+Makefile
