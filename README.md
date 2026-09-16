@@ -30,17 +30,28 @@ cd bluetooth-doctor
 It prints a verdict hint per adapter. Then follow the decision table in
 [`SKILL.md`](SKILL.md).
 
-## Install as a Claude Code skill
+## Install
 
 ```bash
-# per user
-git clone https://github.com/macthom989/bluetooth-doctor ~/.claude/skills/bluetooth-doctor
-# or per project
-git clone https://github.com/macthom989/bluetooth-doctor .claude/skills/bluetooth-doctor
+npx skills add macthom989/bluetooth-doctor -g
 ```
 
-Claude loads it automatically on "bluetooth not working", "scan finds nothing", "dongle
-not working", "pairing fails", "audio stuttering" and similar.
+Installs for Claude Code, Cursor, Codex, Copilot and ~20 other agents via
+[`npx skills`](https://github.com/vercel-labs/skills). Drop `-g` to install into the
+current project instead.
+
+Or clone directly:
+
+```bash
+git clone https://github.com/macthom989/bluetooth-doctor ~/.claude/skills/bluetooth-doctor
+```
+
+For **claude.ai** (Settings → Skills), download `bluetooth-doctor.zip` from the
+[latest release](https://github.com/macthom989/bluetooth-doctor/releases/latest), or
+build it yourself with `./scripts/build-skill-zip.sh`.
+
+Claude loads the skill automatically on "bluetooth not working", "scan finds nothing",
+"dongle not working", "pairing fails", "audio stuttering" and similar.
 
 ## What it covers
 

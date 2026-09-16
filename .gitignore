@@ -13,3 +13,4 @@ bt[a-z][a-z][a-z].c
 bt[a-z][a-z][a-z].h
 btusb.patch
 Makefile
+bluetooth-doctor.zip
