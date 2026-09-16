@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: for f in scripts/*.sh tests/*.sh; do bash -n "$f" && echo "ok  $f"; done
+
+      - name: ShellCheck
+        # -S error only. These scripts read sysfs paths that are known-safe unquoted;
+        # tighten to -S warning after a quoting pass.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck -S error scripts/*.sh tests/*.sh
+
+      - name: Detection tests
+        run: ./tests/test-detection.sh
+
+      - name: Collector degrades cleanly with no Bluetooth hardware
+        # CI runners have no adapter and none of hciconfig/busctl/rfkill/lsusb.
+        # The collector must still exit 0 and say which tools are missing.
+        run: |
+          ./scripts/bt-triage.sh --no-color | tee /tmp/triage.out
+          grep -q 'optional tool missing' /tmp/triage.out
+          test "$(grep -c '========' /tmp/triage.out)" -ge 10
+
+      - name: Adapter listing works with no adapters
+        run: ./scripts/bt-disable-adapter.sh --list
+
+      - name: Privileged actions refuse without root
+        run: |
+          ! ./scripts/bt-disable-adapter.sh 8087:0033 2>/dev/null
+          ! ./scripts/bt-patch-btusb.sh 2c4e:0115 2>/dev/null
+          echo "both refused without root"
+
+      - name: Help output works
+        run: |
+          ./scripts/bt-triage.sh --help
+          ./scripts/bt-disable-adapter.sh --help
+          ./scripts/bt-patch-btusb.sh --help

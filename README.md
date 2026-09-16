@@ -1,5 +1,8 @@
 # bluetooth-doctor
 
+[![CI](https://github.com/macthom989/bluetooth-doctor/actions/workflows/ci.yml/badge.svg)](https://github.com/macthom989/bluetooth-doctor/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Diagnose and fix Linux Bluetooth adapters that **look** healthy but do not work.
 
 A controller stuck on its ROM firmware still answers HCI commands, reports a plausible
