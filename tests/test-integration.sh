@@ -20,7 +20,15 @@ ok()   { printf '  \033[32mPASS\033[0m  %s\n' "$1"; pass=$((pass+1)); }
 no()   { printf '  \033[31mFAIL\033[0m  %s\n' "$1"; fail=$((fail+1)); }
 hr()   { printf '\n=== %s ===\n' "$1"; }
 
-adapters() { ls /sys/class/bluetooth 2>/dev/null | grep -c '^hci[0-9]'; }
+adapters() {
+  local n=0 h
+  for h in /sys/class/bluetooth/hci*; do
+    [ -e "$h" ] || continue
+    case "${h##*/}" in hci*:*) continue ;; esac   # connection objects, not controllers
+    n=$((n+1))
+  done
+  printf '%s\n' "$n"
+}
 bound_ids() {
   for i in /sys/bus/usb/drivers/btusb/*:*; do
     [ -e "$i" ] || continue
@@ -44,7 +52,7 @@ hr "TEST 1 — bt-disable-adapter.sh (re-enable, then disable)"
 sleep 2
 if bound_ids | grep -q "^$DIS$"; then ok "--undo re-bound $DIS to btusb"
 else no "--undo did not bring $DIS back (may need a replug on some hardware)"; fi
-RULE_GONE=1; ls /etc/udev/rules.d/ 2>/dev/null | grep -q "disable-bt-${DIS/:/-}" && RULE_GONE=0
+RULE_GONE=1; [ -e "/etc/udev/rules.d/81-disable-bt-${DIS%%:*}-${DIS##*:}.rules" ] && RULE_GONE=0
 [ "$RULE_GONE" = 1 ] && ok "--undo removed its rule file" || no "--undo left its rule file behind"
 
 OUT=$(./scripts/bt-disable-adapter.sh "$DIS" 2>&1); RC=$?

@@ -15,15 +15,11 @@ jobs:
       - name: Shell syntax
         run: for f in scripts/*.sh tests/*.sh; do bash -n "$f" && echo "ok  $f"; done
 
-      - name: ShellCheck (blocking, errors)
+      - name: ShellCheck
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
-          shellcheck -S error scripts/*.sh tests/*.sh
-
-      - name: ShellCheck (harvest warnings)
-        continue-on-error: true
-        run: shellcheck -S warning -f gcc scripts/*.sh tests/*.sh || true
+          shellcheck -S warning scripts/*.sh tests/*.sh
 
       - name: Detection tests
         run: ./tests/test-detection.sh

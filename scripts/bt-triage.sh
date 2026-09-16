@@ -55,7 +55,13 @@ done
 
 hr "ADAPTER PRESENCE"
 echo "  (hardware seen by USB vs controllers BlueZ can use)"
-HCI_N=$(ls /sys/class/bluetooth 2>/dev/null | grep -cE '^hci[0-9]+$')   # hciN:M are connections, not controllers
+# count controllers via glob; hciN:M entries are connections, not controllers
+HCI_N=0
+for h in /sys/class/bluetooth/hci*; do
+  [ -e "$h" ] || continue
+  case "${h##*/}" in hci*:*) continue ;; esac
+  HCI_N=$((HCI_N+1))
+done
 USB_BT=0
 if [ -d /sys/bus/usb/devices ]; then
   for d in /sys/bus/usb/devices/*; do
@@ -171,8 +177,9 @@ if have journalctl; then
     echo "    (empty above = resume looks clean)"
   fi
 fi
-ls /usr/lib/systemd/system-sleep/ /lib/systemd/system-sleep/ 2>/dev/null \
-  | grep -i blue | sed 's/^/  sleep hook: /' || true
+for hook in /usr/lib/systemd/system-sleep/*blue* /lib/systemd/system-sleep/*blue*; do
+  [ -e "$hook" ] && echo "  sleep hook: $hook"
+done
 
 # ------------------------------------------------------- audio stack
 
