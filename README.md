@@ -53,6 +53,7 @@ The scripts are ordinary shell tools and work standalone; Claude Code is not req
 | `scripts/bt-disable-adapter.sh` | persistently disable one adapter by USB ID |
 | `scripts/bt-patch-btusb.sh` | add an unsupported USB ID to `btusb`, install via DKMS |
 | `tests/test-detection.sh` | 24 assertions on the log-classification patterns; no hardware needed |
+| `tests/test-integration.sh` | 12 assertions exercising both privileged install paths on real hardware |
 
 ## What it covers
 
@@ -155,6 +156,31 @@ source of the `acl` counter.
 
 Tested on Ubuntu with kernel 7.0 and BlueZ 5.85, against Realtek RTL8761BU and Intel
 AX211 hardware. The logic is vendor-agnostic; reports from other combinations welcome.
+
+## Testing
+
+```bash
+./tests/test-detection.sh                                   # no root, no hardware
+sudo ./tests/test-integration.sh <DISABLE_ID> [PATCH_ID]    # real hardware
+```
+
+`test-detection.sh` asserts the log-classification patterns against fixtures taken from
+real bug reports — in particular the split between firmware **never requested** (Fix A)
+and **requested and failed** (Fix D), which is the distinction the whole decision table
+rests on. It runs anywhere and is suitable for CI.
+
+`test-integration.sh` exercises what unit tests cannot: it re-enables and re-disables a
+real adapter through `bt-disable-adapter.sh`, checks the guard that refuses to disable
+your last adapter, then removes any existing btusb DKMS package and reinstalls it with
+`bt-patch-btusb.sh`, verifying that the module in RAM matches the patched module on disk
+and that vendor firmware still loads. A failsafe re-enables `DISABLE_ID` if the run ends
+with no Bluetooth adapters at all.
+
+⚠️ It replaces the running `btusb` module and briefly drops Bluetooth connections. Run it
+on a machine you can afford to disturb. Recovery commands are printed on failure.
+
+Verified on Ubuntu 26.04, kernel 7.0.0-31, BlueZ 5.85, against a Realtek RTL8761BU
+dongle (`2c4e:0115`) and an Intel AX211 (`8087:0033`): 24/24 unit, 12/12 integration.
 
 ## Safety
 
