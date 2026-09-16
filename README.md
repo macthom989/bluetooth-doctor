@@ -99,6 +99,11 @@ vendor helpers, inserts the entry, verifies the ID is in the built object and th
 `vermagic` matches, then installs through DKMS. It generates its own `Makefile` and
 `dkms.conf` — nothing third-party is cloned.
 
+**It checks whether your kernel already has the ID and stops if so.** Most of these land
+upstream eventually — `2c4e:0115`, the dongle this was built for, was merged in kernel
+7.2 — and an override you forget about pins `btusb` to an old revision forever. When
+your kernel catches up, run `--uninstall`.
+
 `bt-disable-adapter.sh` uses the USB `authorized` attribute, the only lever that
 survives reboots, module reloads **and** the desktop Bluetooth toggle. It refuses to
 disable your last adapter. Disabling a combo chip's Bluetooth does not affect its Wi-Fi.

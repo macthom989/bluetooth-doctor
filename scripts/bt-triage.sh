@@ -333,6 +333,9 @@ elif have hciconfig; then
     [ -n "$acl" ] || continue
     if [ "$acl" = "0" ]; then
       printf '  %s%s: acl:0 — has NEVER carried a connection.%s Check the firmware log above (Fix A).\n' "$Y" "$n" "$R"
+      echo "        Before patching, check your kernel already lacks the ID:"
+      echo "          grep '0xVVVV, 0xPPPP' /usr/src/linux-headers-\$(uname -r)/drivers/bluetooth/btusb.c"
+      echo "        Many of these are merged upstream; an override you forget is worse than none."
     else
       printf '  %s%s: acl:%s — radio has carried real traffic;%s look beyond the adapter.\n' "$G" "$n" "$acl" "$R"
     fi

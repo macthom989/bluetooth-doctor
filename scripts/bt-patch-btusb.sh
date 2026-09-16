@@ -174,7 +174,10 @@ done
 
 step "Adding $VID:$PID to the btusb quirks table"
 
-python3 - "$VID" "$PID" "$QUIRKS" <<'PY'
+rc=0
+# `set -e` would abort on a non-zero exit before we could interpret it, so guard the call.
+# Exit 3 from the patcher means the ID is already present in this kernel.
+python3 - "$VID" "$PID" "$QUIRKS" <<'PY' || rc=$?
 import re, sys
 vid, pid, quirks = sys.argv[1], sys.argv[2], sys.argv[3]
 path = 'btusb.c'
@@ -206,8 +209,11 @@ entry = (f'\n\t/* Added by bt-patch-btusb.sh */\n'
 open(path, 'w', encoding='utf-8', errors='surrogateescape').write(src[:pos] + entry + src[pos:])
 print(f'    inserted into {name}: USB_DEVICE(0x{vid}, 0x{pid}) = {quirks}')
 PY
-rc=$?
-[ "$rc" = 3 ] && info "nothing to do — this kernel already supports the device" && exit 0
+if [ "$rc" = 3 ]; then
+  info "nothing to do — this kernel already supports the device"
+  info "no override needed; if one is installed, remove it with --uninstall"
+  exit 0
+fi
 [ "$rc" = 0 ] || die "patching failed"
 
 for q in $(printf '%s' "$QUIRKS" | tr '|' ' '); do
